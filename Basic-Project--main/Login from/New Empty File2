@@ -1,0 +1,517 @@
+
+<?php
+session_start();
+// If user is logged in
+if (isset($_SESSION['user_id'])) {
+    header("Location: consultation.php");
+    exit;
+} else {
+    // Not logged in
+    header("Location: choice.php");
+    exit;
+}
+?>
+
+<?php
+session_start();
+
+// If user is already logged in, send them straight to booking page
+if (isset($_SESSION['user_id'])) {
+    header("Location: consultation.php");
+    exit;
+}
+?>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Make a Quote - Choose Option</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: url('images/background.png') no-repeat center center;
+            background-size: cover;
+            margin: 0;
+            padding: 0;
+            color: #133B1E;
+        }
+
+        .container {
+            background-color: rgba(255, 255, 255, 0.95);
+            max-width: 500px;
+            margin: 100px auto;
+            padding: 40px;
+            text-align: center;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        h2 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background-color: #133B1E;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            margin: 10px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            background-color: #0f2f18;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Welcome to Rolsa Technologies</h2>
+    <p>Please choose an option to continue:</p>
+    <a class="btn" href="login.php">I'm an Existing Customer</a>
+    <a class="btn" href="signup.php">I'm a New Customer</a>
+</div>
+
+</body>
+</html>
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Book a Consultation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: url('images/background.png') no-repeat center center;
+      background-size: cover;
+      margin: 0;
+      padding: 0;
+      color: #133B1E;
+    }
+
+    .container {
+      background-color: rgba(255, 255, 255, 0.95);
+      max-width: 500px;
+      margin: 50px auto;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      margin-top: 5px;
+    }
+
+    button {
+      background-color: #133B1E;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin-top: 20px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Book a Consultation</h2>
+  <form method="POST" action="confirm_consultation.php" onsubmit="return validateForm();">
+    <label for="user_name">First Name *</label>
+    <input type="text" name="user_name" id="user_name" required>
+
+    <label for="user_surname">Last Name *</label>
+    <input type="text" name="user_surname" id="user_surname" required>
+
+    <label for="user_email">Email *</label>
+    <input type="email" name="user_email" id="user_email" required>
+
+    <label for="service_type">What service are you interested in?</label>
+    <select name="service_type" id="service_type" required>
+      <option value="">-- Select --</option>
+      <option value="solar panels">Solar Panels</option>
+      <option value="ev chargers">EV Chargers</option>
+      <option value="smart home energy">Smart Home Energy</option>
+    </select>
+
+    <label for="booking_date">Preferred Date</label>
+    <input type="date" name="booking_date" id="booking_date" required>
+
+    <button type="submit">Submit</button>
+  </form>
+</div>
+
+<script>
+  function validateForm() {
+    let name = document.getElementById("user_name").value;
+    let surname = document.getElementById("user_surname").value;
+    let email = document.getElementById("user_email").value;
+    let service = document.getElementById("service_type").value;
+    let date = document.getElementById("booking_date").value;
+
+    if (name == "" || surname == "" || email == "" || service == "" || date == "") {
+      alert("Please fill in all fields.");
+      return false;
+    }
+
+    if (!email.includes("@") || !email.includes(".")) {
+      alert("Please enter a valid email address.");
+      return false;
+    }
+
+    const selectedDate = new Date(date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (selectedDate < today) {
+      alert("Please select a future date.");
+      return false;
+    }
+
+    const day = selectedDate.getDay();
+    if (day === 0 || day === 6) {
+      alert("Please choose a weekday (Mon–Fri).");
+      return false;
+    }
+
+    return true;
+  }
+</script>
+</body>
+</html>
+
+
+<?php
+session_start();
+include('db.php');
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $user_name = $_POST['user_name'];
+    $user_surname = $_POST['user_surname'];
+    $user_email = $_POST['user_email'];
+    $service_type = $_POST['service_type'];
+    $booking_date = $_POST['booking_date'];
+
+    if (isset($_SESSION['user_id'])) {
+        $user_id = $_SESSION['user_id'];
+
+        $query = "INSERT INTO bookings_rolsa (user_id, service_type, booking_date, status) 
+                  VALUES ('$user_id', 'consultation', '$booking_date', 0)";
+        mysqli_query($conn, $query);
+
+        $subject = "Consultation Booked";
+$body = "Hello $user_name $user_surname,\n\nThank you for booking a consultation about $service_type.\n\nWe're reviewing your request and will get in touch shortly.\n\nIf you'd like to proceed directly with booking an installation, please follow the link below:\nhttp://wtcict.softether.net/T-Level/d9gtyvksowhfgmvbdteilcfddj/anna/Rolsa%20Technologies/installation.php\n\n– Rolsa Technologies Team";
+$headers = "From: no-reply@rolsa.com";
+mail($user_email, $subject, $body, $headers);
+    }
+}
+?>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Confirmation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f1f1f1;
+      margin: 0;
+      padding: 0;
+      color: #133B1E;
+    }
+    .confirmation-box {
+      max-width: 500px;
+      background: white;
+      margin: 60px auto;
+      padding: 40px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #133B1E;
+    }
+    p {
+      font-size: 1.1rem;
+      margin-top: 20px;
+    }
+    a {
+      display: inline-block;
+      margin-top: 30px;
+      background-color: #133B1E;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 6px;
+      text-decoration: none;
+    }
+    a:hover {
+      background-color: #0d2b12;
+    }
+  </style>
+</head>
+<body>
+
+<div class="confirmation-box">
+  <h1>Thank You for Booking!</h1>
+  <p>Your consultation request was received successfully.</p>
+  <p>We’ll be in touch with you soon via email.</p>
+  <a href="home.php">Back to Home</a>
+</div>
+
+</body>
+</html>
+
+
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Book Installation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: url('images/background.png') no-repeat center center;
+      background-size: cover;
+      margin: 0;
+      padding: 0;
+      color: #133B1E;
+    }
+
+    .container {
+      background-color: rgba(255, 255, 255, 0.96);
+      max-width: 500px;
+      margin: 50px auto;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background-color: #133B1E;
+      color: white;
+      border: none;
+      padding: 10px;
+      margin-top: 20px;
+      width: 100%;
+      font-weight: bold;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+<?php
+include('header.php');?>
+<div class="container">
+  <h2>Book an Installation</h2>
+  <form method="POST" action="install_confirm.php" onsubmit="return validateInstallForm();">
+    <label for="full_name">Full Name *</label>
+    <input type="text" name="full_name" id="full_name" required>
+
+    <label for="email">Email *</label>
+    <input type="email" name="email" id="email" required>
+
+    <label for="phone">Phone Number *</label>
+    <input type="text" name="phone" id="phone" required>
+
+    <label for="address">Installation Address *</label>
+    <input type="text" name="address" id="address" required>
+
+    <label for="topic">What are we installing?</label>
+    <select name="topic" id="topic" required>
+      <option value="">-- Select --</option>
+      <option value="solar panels">Solar Panels</option>
+      <option value="ev chargers">EV Chargers</option>
+      <option value="smart home energy">Smart Home Energy</option>
+    </select>
+
+    <label for="install_date">Preferred Date *</label>
+    <input type="date" name="install_date" id="install_date" required>
+
+    <label for="install_time">Preferred Time (09:00 - 17:00) *</label>
+    <input type="time" name="install_time" id="install_time" required>
+
+    <button type="submit">Book Installation</button>
+  </form>
+</div>
+
+<script>
+  function validateInstallForm() {
+    const email = document.getElementById("email").value;
+    const date = new Date(document.getElementById("install_date").value);
+    const time = document.getElementById("install_time").value;
+
+    if (!email.includes("@") || !email.includes(".")) {
+      alert("Please enter a valid email address.");
+      return false;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (date < today) {
+      alert("Date must be in the future.");
+      return false;
+    }
+
+    const day = date.getDay();
+    if (day === 0 || day === 6) {
+      alert("Please choose a weekday (Mon–Fri).");
+      return false;
+    }
+
+    if (time < "09:00" || time > "17:00") {
+      alert("Installation time must be between 09:00 and 17:00.");
+      return false;
+    }
+
+    return true;
+  }
+</script>
+</body>
+</html>
+
+<?php
+session_start();
+$host = "localhost";
+$username = "tlevel_anna";
+$password = "anna19782009";
+$database = "tlevel_anna";
+
+// Create connection
+$conn = mysqli_connect($host, $username, $password, $database);
+
+// Check connection
+if (!$conn) {
+    die("Connection failed: " . mysqli_connect_error());
+}
+include('header.php');$message = "";
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $full_name = $_POST['full_name'];
+    $email = $_POST['email'];
+    $phone = $_POST['phone'];
+    $address = $_POST['address'];
+    $topic = $_POST['topic'];
+    $install_date = $_POST['install_date'];
+    $install_time = $_POST['install_time'];
+
+    $user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
+
+    // Save to DB
+    $datetime = $install_date . ' ' . $install_time;
+    $query = "INSERT INTO bookings_rolsa (user_id, service_type, booking_date, status) 
+              VALUES ('$user_id', 'installation', '$datetime', 0)";
+    mysqli_query($conn, $query);
+
+    // Send confirmation email
+    $subject = "Installation Booked";
+    $body = "Hello $full_name,\n\nThank you for booking an installation about $topic.\nHere are your details:\n\nAddress: $address\nDate: $install_date\nTime: $install_time\nPhone: $phone\n\nWe’ll contact you to confirm everything.\n\n– Rolsa Technologies Team";
+    $headers = "From: no-reply@rolsa.com";
+    mail($email, $subject, $body, $headers);
+}
+?>
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Installation Confirmed</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: url('images/background.png') no-repeat center center;
+      background-size: cover;
+      margin: 0;
+      padding: 0;
+      color: #133B1E;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 80px auto;
+      padding: 40px;
+      background-color: rgba(255, 255, 255, 0.96);
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    p {
+      font-size: 1.1rem;
+      line-height: 1.6;
+    }
+
+    a {
+      display: inline-block;
+      margin-top: 20px;
+      background-color: #133B1E;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 6px;
+      text-decoration: none;
+    }
+
+    a:hover {
+      background-color: #0f2f18;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Your Installation Has Been Booked</h1>
+  <p>Thank you, <strong><?php echo htmlspecialchars($full_name); ?></strong>!<br>
+  Your installation request for <strong><?php echo htmlspecialchars($topic); ?></strong> has been received.</p>
+
+  <p>You will receive an email at <strong><?php echo htmlspecialchars($email); ?></strong> confirming the date and time.</p>
+
+  <a href="home.php">Back to Home</a>
+</div>
+
+</body>
+</html>
